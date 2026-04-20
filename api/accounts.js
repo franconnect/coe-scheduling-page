@@ -8,9 +8,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const fileRes = await fetch(
-      'https://francon1062.sharepoint.com/:x:/s/franconnectuniversity/IQA6CzvquAsJTLIw_tkRBefDAYyOBjaY7hGM6D1V9aejxgM?e=bnI3Hd&download=1'
-    );
+const fileRes = await fetch(
+  'https://coe-scheduling-page.vercel.app/account-list.csv'
+);
 if (!fileRes.ok) {
   console.error('SharePoint fetch failed:', fileRes.status, fileRes.statusText, await fileRes.text());
   throw new Error('Failed to fetch account list');
