@@ -11,9 +11,10 @@ export default async function handler(req, res) {
     const fileRes = await fetch(
       'https://francon1062.sharepoint.com/:x:/s/franconnectuniversity/IQA6CzvquAsJTLIw_tkRBefDAYyOBjaY7hGM6D1V9aejxgM?e=bnI3Hd&download=1'
     );
-
-    if (!fileRes.ok) throw new Error('Failed to fetch account list');
-
+if (!fileRes.ok) {
+  console.error('SharePoint fetch failed:', fileRes.status, fileRes.statusText, await fileRes.text());
+  throw new Error('Failed to fetch account list');
+}
     const csvText = await fileRes.text();
     const lines = csvText.split('\n').filter(l => l.trim());
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
