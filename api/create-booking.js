@@ -92,11 +92,11 @@ export default async function handler(req, res) {
       }
     );
 
-    if (!bookingsRes.ok) {
-      const err = await bookingsRes.json();
-      console.error('Bookings API error:', err);
-      return res.status(500).json({ error: 'Failed to create booking' });
-    }
+   if (!bookingsRes.ok) {
+  const errText = await bookingsRes.text();
+  console.error('Bookings API error:', bookingsRes.status, errText);
+  return res.status(500).json({ error: 'Failed to create booking', detail: errText, status: bookingsRes.status });
+}
 
     const created = await bookingsRes.json();
     return res.status(200).json({
@@ -106,8 +106,8 @@ export default async function handler(req, res) {
       meetingTitle
     });
 
-  } catch (err) {
-    console.error('Create booking error:', err);
-    return res.status(500).json({ error: 'Failed to create booking' });
-  }
+ } catch (err) {
+  console.error('Create booking error:', err);
+  return res.status(500).json({ error: 'Failed to create booking', detail: err.message });
+}
 }
