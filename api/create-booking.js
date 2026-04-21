@@ -108,7 +108,7 @@ export default async function handler(req, res) {
       }]
     };
 
-    console.log('Sending to Bookings:', JSON.stringify(appointment));
+console.error('Sending to Bookings:', JSON.stringify(appointment));
 
     const bookingsRes = await fetch(
       `https://graph.microsoft.com/v1.0/solutions/bookingBusinesses/${CALENDAR_ID}/appointments`,
