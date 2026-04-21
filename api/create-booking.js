@@ -1,4 +1,4 @@
-javascriptconst TENANT_ID = process.env.BOOKINGS_TENANT_ID;
+const TENANT_ID = process.env.BOOKINGS_TENANT_ID;
 const CLIENT_ID = process.env.BOOKINGS_CLIENT_ID;
 const CLIENT_SECRET = process.env.BOOKINGS_CLIENT_SECRET;
 const CALENDAR_ID = process.env.BOOKINGS_CALENDAR_ID;
