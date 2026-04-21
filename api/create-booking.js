@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         "timeZone": "UTC"
       },
       "additionalInformation": `Booked by: ${bookedBy} (${bookerEmail}) | Salesforce ID: ${sfId}`,
-      "staffMemberIds": staffId && staffId !== 'any' ? [staffId] : [],
+...(staffId && staffId !== 'any' ? { "staffMemberIds": [staffId] } : {}),
       "customers": [{
         "@odata.type": "#microsoft.graph.bookingCustomerInformation",
         "name": customerName,
