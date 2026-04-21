@@ -1,4 +1,3 @@
-Sure — here's the complete replacement for api/create-booking.js:
 javascriptconst TENANT_ID = process.env.BOOKINGS_TENANT_ID;
 const CLIENT_ID = process.env.BOOKINGS_CLIENT_ID;
 const CLIENT_SECRET = process.env.BOOKINGS_CLIENT_SECRET;
