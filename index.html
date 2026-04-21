@@ -859,18 +859,17 @@ async function createBooking(payload) {
 // ─── Service IDs (replace with real IDs from Bookings) ───────────────
 function getServiceId(duration) {
   const map = {
-    30: 'SERVICE_ID_30',
-    60: 'SERVICE_ID_60',
-    90: 'SERVICE_ID_90'
+    30: 'c00ae9ef-a95b-4622-bdd9-9fda1bdcd459',
+    60: '4a6dba2d-d744-4897-9604-6184286eba88',
+    90: 'c76640f9-34a7-4fdb-926e-e5d15d2f5ce5'
   };
   return map[duration] || '';
 }
 
-// ─── Trainer data (replace with real staff IDs from Bookings) ─────────
 const TRAINERS = [
-  { id: 'STAFF_ID_1', name: 'Sherry Stanton', initials: 'SS' },
-  { id: 'STAFF_ID_2', name: 'Frank Menger', initials: 'FM' },
-  { id: 'STAFF_ID_3', name: 'Monica Fitchett', initials: 'MF' },
+  { id: '93746261-a0e8-4a2c-b3d9-c345626aa1aa', name: 'Sherry Stanton', initials: 'SS' },
+  { id: '09c5c966-6e81-4104-b093-80d496d1a5e4', name: 'Frank Menger', initials: 'FM' },
+  { id: 'bbb5a53a-96b8-4f68-890b-05ab765b8bc4', name: 'Monica Fitchett', initials: 'MF' },
 ];
 
 // ─── Account search ───────────────────────────────────────────────────
