@@ -62,18 +62,18 @@ export default async function handler(req, res) {
       "serviceName": meetingTitle,
       "serviceId": serviceId,
       "isLocationOnline": true,
-      "start": {
+      "startDateTime": {
         "@odata.type": "#microsoft.graph.dateTimeTimeZone",
         "dateTime": startDateTime,
         "timeZone": "UTC"
       },
-      "end": {
+      "endDateTime": {
         "@odata.type": "#microsoft.graph.dateTimeTimeZone",
         "dateTime": endDateTime,
         "timeZone": "UTC"
       },
       "additionalInformation": `Booked by: ${bookedBy} (${bookerEmail}) | Salesforce ID: ${sfId}`,
-...(staffId && staffId !== 'any' ? { "staffMemberIds": [staffId] } : {}),
+      ...(staffId && staffId !== 'any' ? { "staffMemberIds": [staffId] } : {}),
       "customers": [{
         "@odata.type": "#microsoft.graph.bookingCustomerInformation",
         "name": customerName,
@@ -108,7 +108,7 @@ export default async function handler(req, res) {
       }]
     };
 
-console.error('Sending to Bookings:', JSON.stringify(appointment));
+    console.error('Sending to Bookings:', JSON.stringify(appointment));
 
     const bookingsRes = await fetch(
       `https://graph.microsoft.com/v1.0/solutions/bookingBusinesses/${CALENDAR_ID}/appointments`,
