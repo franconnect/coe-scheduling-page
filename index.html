@@ -832,69 +832,48 @@ const state = {
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-// ─── API calls ───────────────────────────────────────────────────────
-async function fetchAccounts(query) {
-  const res = await fetch(`/api/accounts?q=${encodeURIComponent(query)}`);
-  const data = await res.json();
-  return data.accounts || [];
-}
-
-async function fetchAvailability(startDate, endDate) {
-  const serviceId = getServiceId(state.duration);
-  const staffId = state.trainer === 'any' ? '' : state.trainer;
-  const res = await fetch(`/api/availability?start=${startDate}&end=${endDate}&serviceId=${serviceId}&staffId=${staffId}`);
-  const data = await res.json();
-  return data.busySlots || [];
-}
-
-async function createBooking(payload) {
-  const res = await fetch('/api/create-booking', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  return await res.json();
-}
-
-// ─── Service IDs (replace with real IDs from Bookings) ───────────────
-function getServiceId(duration) {
-  const map = {
-    30: 'c00ae9ef-a95b-4622-bdd9-9fda1bdcd459',
-    60: '4a6dba2d-d744-4897-9604-6184286eba88',
-    90: 'c76640f9-34a7-4fdb-926e-e5d15d2f5ce5'
-  };
-  return map[duration] || '';
-}
-
-const TRAINERS = [
-  { id: 'bbb5a53a-96b8-4f68-890b-05ab765b8bc4', name: 'Sherry Stanton', initials: 'SS' },
-  { id: '09c5c966-6e81-4104-b093-80d496d1a5e4', name: 'Monica Fitchett', initials: 'MF' },
-  { id: '93746261-a0e8-4a2c-b3d9-c345626aa1aa', name: 'Frank Menger', initials: 'FM' },
+// ─── Mock data (replace with API calls) ──────────────────────────────
+const MOCK_ACCOUNTS = [
+  { name: 'Abrakadoodle', sfId: '001Xx000001AABCD', buildName: 'Abrakadoodle' },
+  { name: 'Acme Franchise Group', sfId: '001Xx000001AABCE', buildName: 'AcmeFranchiseGroup' },
+  { name: 'Brightfield Health Systems', sfId: '001Xx000001AABCF', buildName: 'BrightfieldHealthSystems' },
+  { name: 'Cornerstone Municipal Group', sfId: '001Xx000001AABCG', buildName: 'CornerstoneMunicipalGroup' },
+  { name: 'Delray Logistics Partners', sfId: '001Xx000001AABCH', buildName: 'DelrayLogisticsPartners' },
+  { name: 'Eastwood Financial Services', sfId: '001Xx000001AABCI', buildName: 'EastwoodFinancialServices' },
+  { name: 'Fairview County Schools', sfId: '001Xx000001AABCJ', buildName: 'FairviewCountySchools' },
+  { name: 'Greenway Technologies', sfId: '001Xx000001AABCK', buildName: 'GreenwayTechnologies' },
 ];
 
+const MOCK_TRAINERS = [
+  { id: 't1', name: 'Jamie Mercer', initials: 'JM' },
+  { id: 't2', name: 'Rosa Park', initials: 'RP' },
+  { id: 't3', name: 'David Lim', initials: 'DL' },
+];
+
+function getMockSlots(dayIndex, trainerFilter) {
+  const allSlots = [
+    [['9:00 am','10:30 am','2:00 pm'], ['9:00 am','11:00 am','1:30 pm','3:00 pm'], ['10:00 am','2:00 pm'], ['9:30 am','11:00 am','2:30 pm'], ['9:00 am','10:00 am','1:00 pm'], [], []],
+    [['9:00 am','10:30 am'], ['1:30 pm','3:00 pm'], [], ['9:30 am'], ['10:00 am','1:00 pm'], [], []],
+    [['2:00 pm'], ['9:00 am','11:00 am'], ['10:00 am','2:00 pm'], ['11:00 am'], ['9:00 am'], [], []],
+    [[], ['9:00 am'], [], ['2:30 pm'], ['1:00 pm'], [], []],
+  ];
+  const idx = trainerFilter === 'any' ? 0 : trainerFilter === 't1' ? 1 : trainerFilter === 't2' ? 2 : 3;
+  return allSlots[idx][dayIndex] || [];
+}
+
 // ─── Account search ───────────────────────────────────────────────────
-document.getElementById('account-search').addEventListener('input', async function() {
-  const val = this.value.trim();
+document.getElementById('account-search').addEventListener('input', function() {
+  const val = this.value.trim().toLowerCase();
   const results = document.getElementById('search-results');
   const sel = document.getElementById('selected-account');
   sel.style.display = 'none';
-  if (val.length < 2) { results.style.display = 'none'; return; }
-
+  if (!val) { results.style.display = 'none'; return; }
+  const matches = MOCK_ACCOUNTS.filter(a => a.name.toLowerCase().includes(val));
+  if (!matches.length) { results.style.display = 'none'; return; }
   results.style.display = 'block';
-  results.innerHTML = '<div class="search-result-item" style="color:var(--gray)">Searching...</div>';
-
-  try {
-    const accounts = await fetchAccounts(val);
-    if (!accounts.length) {
-      results.innerHTML = '<div class="search-result-item" style="color:var(--gray)">No accounts found</div>';
-      return;
-    }
-    results.innerHTML = accounts.map(a =>
-      `<div class="search-result-item" onclick="pickAccount(${JSON.stringify(a).replace(/"/g,'&quot;')})">${a.name}</div>`
-    ).join('');
-  } catch(e) {
-    results.innerHTML = '<div class="search-result-item" style="color:red">Error loading accounts</div>';
-  }
+  results.innerHTML = matches.map(a =>
+    `<div class="search-result-item" onclick="pickAccount(${JSON.stringify(a).replace(/"/g,'&quot;')})">${a.name}</div>`
+  ).join('');
 });
 
 function pickAccount(account) {
@@ -923,7 +902,7 @@ function selectDuration(el, mins) {
 function buildTrainerList() {
   const container = document.getElementById('trainer-options');
   const divider = container.querySelector('.divider');
-  TRAINERS.forEach(t => {
+  MOCK_TRAINERS.forEach(t => {
     const existing = container.querySelector(`[data-trainer="${t.id}"]`);
     if (existing) return;
     const el = document.createElement('div');
@@ -931,7 +910,7 @@ function buildTrainerList() {
     el.setAttribute('data-trainer', t.id);
     el.onclick = () => selectTrainer(el, t.id, t.name);
     el.innerHTML = `<div class="trainer-avatar">${t.initials}</div><div><div class="trainer-name">${t.name}</div><div class="trainer-sub">FranConnect trainer</div></div>`;
-    container.appendChild(el);
+    container.insertBefore(el, null);
   });
 }
 
@@ -942,14 +921,10 @@ function selectTrainer(el, id, name) {
   state.trainerName = name || 'Any available';
   const sub = document.getElementById('avail-sub');
   sub.textContent = id === 'any' ? 'Showing availability across all trainers' : `Showing availability for ${name}`;
-  state.slot = null;
-  document.getElementById('selected-time-display').style.display = 'none';
   renderCalendar();
 }
 
 // ─── Calendar ─────────────────────────────────────────────────────────
-let busySlots = [];
-
 function getWeekStart(offset) {
   const d = new Date();
   d.setHours(0,0,0,0);
@@ -957,45 +932,7 @@ function getWeekStart(offset) {
   return d;
 }
 
-async function loadAvailability() {
-  const ws = getWeekStart(state.weekOffset);
-  const we = new Date(ws); we.setDate(ws.getDate() + 7);
-  const startISO = ws.toISOString();
-  const endISO = we.toISOString();
-  try {
-    busySlots = await fetchAvailability(startISO, endISO);
-  } catch(e) {
-    busySlots = [];
-  }
-}
-
-function isSlotBusy(date, timeStr) {
-  const [time, period] = timeStr.split(' ');
-  const [hours, minutes] = time.split(':').map(Number);
-  let h = hours;
-  if (period === 'pm' && h !== 12) h += 12;
-  if (period === 'am' && h === 12) h = 0;
-
-  // Build slot times using the date's local year/month/day
-  const y = date.getFullYear();
-  const mo = date.getMonth();
-  const d = date.getDate();
-  const slotStart = new Date(y, mo, d, h, minutes || 0, 0, 0);
-  const slotEnd = new Date(slotStart);
-  slotEnd.setMinutes(slotEnd.getMinutes() + (state.duration || 60));
-
-  return busySlots.some(busy => {
-    if (!busy.start || !busy.end) return false;
-    const bs = new Date(busy.start);
-    const be = new Date(busy.end);
-    const trainerMatch = state.trainer === 'any' || busy.staffId === state.trainer;
-    return trainerMatch && slotStart < be && slotEnd > bs;
-  });
-}
-
-const TIME_SLOTS = ['9:00 am','9:30 am','10:00 am','10:30 am','11:00 am','11:30 am','1:00 pm','1:30 pm','2:00 pm','2:30 pm','3:00 pm','3:30 pm','4:00 pm'];
-
-async function renderCalendar() {
+function renderCalendar() {
   const ws = getWeekStart(state.weekOffset);
   const we = new Date(ws); we.setDate(ws.getDate() + 6);
   document.getElementById('week-label').textContent = `${MONTHS[ws.getMonth()]} ${ws.getDate()} – ${MONTHS[we.getMonth()]} ${we.getDate()}`;
@@ -1004,12 +941,8 @@ async function renderCalendar() {
   const today = new Date(); today.setHours(0,0,0,0);
   const heads = document.getElementById('cal-heads');
   const slotsEl = document.getElementById('cal-slots');
-  heads.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--gray);padding:8px 0">Loading availability...</div>';
-  slotsEl.innerHTML = '';
+  heads.innerHTML = ''; slotsEl.innerHTML = '';
 
-  await loadAvailability();
-
-  heads.innerHTML = '';
   for (let i = 0; i < 7; i++) {
     const d = new Date(ws); d.setDate(ws.getDate() + i);
     const isToday = d.getTime() === today.getTime();
@@ -1021,20 +954,28 @@ async function renderCalendar() {
     heads.appendChild(h);
   }
 
-  for (let row = 0; row < TIME_SLOTS.length; row++) {
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(ws); d.setDate(ws.getDate() + i);
-      const isPast = d < today;
-      const col = document.createElement('div');
-      const time = TIME_SLOTS[row];
-      const busy = !isPast && isSlotBusy(d, time);
-      const isSelected = state.slot && state.slot.dayIdx === i && state.slot.row === row;
+  let maxSlots = 0;
+  const weekSlots = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(ws); d.setDate(ws.getDate() + i);
+    const isPast = d < today;
+    const slots = isPast ? [] : getMockSlots(i, state.trainer);
+    weekSlots.push(slots);
+    maxSlots = Math.max(maxSlots, slots.length);
+  }
 
-      if (isPast || busy) {
+  for (let row = 0; row < Math.max(maxSlots, 3); row++) {
+    for (let i = 0; i < 7; i++) {
+      const col = document.createElement('div');
+      const d = new Date(ws); d.setDate(ws.getDate() + i);
+      const slots = weekSlots[i];
+      if (!slots[row]) {
         col.className = 'time-slot unavailable';
-        col.textContent = isPast ? '' : time;
-        if (isPast) col.style.visibility = 'hidden';
+        col.style.visibility = 'hidden';
+        col.textContent = '.';
       } else {
+        const time = slots[row];
+        const isSelected = state.slot && state.slot.dayIdx === i && state.slot.row === row;
         col.className = 'time-slot' + (isSelected ? ' selected' : '');
         col.textContent = time;
         col.onclick = (() => {
@@ -1116,66 +1057,15 @@ function hideLoading() {
 
 // ─── Submit ───────────────────────────────────────────────────────────
 async function submitBooking() {
-  const notes = document.getElementById('session-notes').value.trim();
-  const bookedBy = document.getElementById('booked-by').value.trim();
-  const bookerEmail = document.getElementById('booker-email').value.trim();
-  const customerEmail = document.getElementById('customer-email').value.trim();
-
-  if (!notes || !bookedBy || !bookerEmail || !customerEmail) {
-    showError('err5', 'Please fill in all required fields.');
-    return;
-  }
-
-  if (!state.slot) {
-    showError('err5', 'Please select a time slot.');
-    return;
-  }
-
   showLoading('Creating booking...');
-
-  // Build start and end times
-  const date = state.slot.date;
-  const [time, period] = state.slot.time.split(' ');
-  const [hours, minutes] = time.split(':').map(Number);
-  let h = hours;
-  if (period === 'pm' && h !== 12) h += 12;
-  if (period === 'am' && h === 12) h = 0;
-  const start = new Date(date);
-  start.setHours(h, minutes || 0, 0, 0);
-  const end = new Date(start);
-  end.setMinutes(end.getMinutes() + state.duration);
-
-  const payload = {
-    buildName: state.account.buildName,
-    customerEmail,
-    customerName: document.getElementById('booked-by').value.trim(),
-    serviceId: getServiceId(state.duration),
-    staffId: state.trainer,
-    startDateTime: start.toISOString(),
-    endDateTime: end.toISOString(),
-    sessionNotes: notes,
-    bookedBy,
-    bookerEmail,
-    sfId: state.account.sfId,
-    duration: state.duration
-  };
-
-  try {
-    const result = await createBooking(payload);
-    hideLoading();
-
-    if (result.error) {
-      showError('err5', 'Booking failed: ' + result.error);
-      return;
-    }
-
-    document.getElementById('success-detail').textContent = `${result.meetingTitle} · Teams invite sent.`;
-    goTo(7);
-
-  } catch(e) {
-    hideLoading();
-    showError('err5', 'Something went wrong. Please try again.');
-  }
+  // TODO: replace with real API call to /api/create-booking
+  await new Promise(r => setTimeout(r, 1500));
+  hideLoading();
+  const date = state.slot?.date;
+  const dateStr = date ? `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}` : '00000000';
+  const meetingTitle = `FranConnect Product Consultation — ${state.account?.buildName} — ${dateStr}`;
+  document.getElementById('success-detail').textContent = `"${meetingTitle}" · Teams invite sent.`;
+  goTo(7);
 }
 
 function resetForm() {
@@ -1192,8 +1082,7 @@ function resetForm() {
   document.querySelector('[data-trainer="any"]').classList.add('selected');
   goTo(1);
 }
-  
-  
+
 // ─── Init ─────────────────────────────────────────────────────────────
 renderCalendar();
 </script>
