@@ -970,21 +970,23 @@ async function loadAvailability() {
 }
 
 function isSlotBusy(date, timeStr) {
-  // Parse the time slot and check against busySlots
   const [time, period] = timeStr.split(' ');
   const [hours, minutes] = time.split(':').map(Number);
   let h = hours;
   if (period === 'pm' && h !== 12) h += 12;
   if (period === 'am' && h === 12) h = 0;
+  
+  // Create slot time in local time
   const slotStart = new Date(date);
   slotStart.setHours(h, minutes || 0, 0, 0);
   const slotEnd = new Date(slotStart);
   slotEnd.setMinutes(slotEnd.getMinutes() + (state.duration || 60));
 
   return busySlots.some(busy => {
+    if (!busy.start || !busy.end) return false;
     const bs = new Date(busy.start);
     const be = new Date(busy.end);
-    const trainerMatch = !busy.staffId || state.trainer === 'any' || busy.staffId === state.trainer;
+    const trainerMatch = state.trainer === 'any' || busy.staffId === state.trainer;
     return trainerMatch && slotStart < be && slotEnd > bs;
   });
 }
