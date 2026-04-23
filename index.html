@@ -741,6 +741,10 @@ footer {
     <div class="step-content screen" id="screen4">
       <div class="step-heading">Pick a time</div>
       <div class="step-sub" id="avail-sub">Showing availability across all trainers</div>
+      <div class="tz-row">
+  <label for="tz-select">Time zone:</label>
+  <select id="tz-select" onchange="onTzChange(this.value)"></select>
+</div>
       <div class="week-nav">
         <button class="week-nav-btn" id="prev-week" onclick="shiftWeek(-1)">← Prev</button>
         <span class="week-label" id="week-label"></span>
