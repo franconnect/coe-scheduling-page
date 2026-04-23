@@ -818,31 +818,93 @@ footer {
 
 <footer>FranConnect · COE Training Scheduler · Internal use only</footer>
 
-<script>
-// ─── State ───────────────────────────────────────────────────────────
 const state = {
-  account: null,       // { name, sfId, buildName }
-  duration: null,      // 30 | 60 | 90
-  trainer: 'any',      // 'any' | trainer id
+  account: null,
+  duration: null,
+  trainer: 'any',
   trainerName: 'Any available',
-  slot: null,          // { date, time, dateLabel }
+  slot: null,
   weekOffset: 0,
 };
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-// ─── API calls ───────────────────────────────────────────────────────
+const TIMEZONES = [
+  { label: 'Eastern (ET)',           tz: 'America/New_York' },
+  { label: 'Central (CT)',           tz: 'America/Chicago' },
+  { label: 'Mountain (MT)',          tz: 'America/Denver' },
+  { label: 'Arizona (no DST)',       tz: 'America/Phoenix' },
+  { label: 'Pacific (PT)',           tz: 'America/Los_Angeles' },
+  { label: 'Alaska (AKT)',           tz: 'America/Anchorage' },
+  { label: 'Hawaii (HT)',            tz: 'Pacific/Honolulu' },
+  { label: 'London (GMT/BST)',       tz: 'Europe/London' },
+  { label: 'Paris / Berlin (CET)',   tz: 'Europe/Paris' },
+  { label: 'Dubai (GST)',            tz: 'Asia/Dubai' },
+  { label: 'India (IST)',            tz: 'Asia/Kolkata' },
+  { label: 'Bangkok (ICT)',          tz: 'Asia/Bangkok' },
+  { label: 'Singapore / KL (SGT)',   tz: 'Asia/Singapore' },
+  { label: 'Hong Kong (HKT)',        tz: 'Asia/Hong_Kong' },
+  { label: 'Tokyo (JST)',            tz: 'Asia/Tokyo' },
+  { label: 'Sydney (AEST/AEDT)',     tz: 'Australia/Sydney' },
+  { label: 'Auckland (NZST/NZDT)',   tz: 'Pacific/Auckland' },
+];
+
+let selectedTz = 'America/New_York';
+
+(function buildTzDropdown() {
+  const sel = document.getElementById('tz-select');
+  TIMEZONES.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.tz;
+    opt.textContent = t.label;
+    if (t.tz === selectedTz) opt.selected = true;
+    sel.appendChild(opt);
+  });
+})();
+
+function onTzChange(tz) {
+  selectedTz = tz;
+  state.slot = null;
+  document.getElementById('selected-time-display').style.display = 'none';
+  renderCalendar();
+}
+
+function localWallToUTC(y, mo, d, h, m, tz) {
+  const probe = new Date(Date.UTC(y, mo, d, h, m));
+  const localStr = probe.toLocaleString('en-US', { timeZone: tz, hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const [datePart, timePart] = localStr.split(', ');
+  const [mm, dd, yyyy] = datePart.split('/').map(Number);
+  const [hh, mn] = timePart.split(':').map(Number);
+  const diff = probe - new Date(Date.UTC(yyyy, mm-1, dd, hh, mn, 0));
+  return new Date(probe.getTime() + diff);
+}
+
+function getSlotsForDay(calDate, tz) {
+  const slots = [];
+  const y = calDate.getFullYear(), mo = calDate.getMonth(), d = calDate.getDate();
+  for (let h = 8; h < 18; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const utc = localWallToUTC(y, mo, d, h, m, tz);
+      const label = new Date(2000, 0, 1, h, m).toLocaleTimeString('en-US',
+        { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+      slots.push({ label, utc });
+    }
+  }
+  return slots;
+}
+
 async function fetchAccounts(query) {
   const res = await fetch(`/api/accounts?q=${encodeURIComponent(query)}`);
   const data = await res.json();
   return data.accounts || [];
 }
 
-async function fetchAvailability(startDate, endDate) {
-  const serviceId = getServiceId(state.duration);
+async function fetchAvailability(start, end) {
   const staffId = state.trainer === 'any' ? '' : state.trainer;
-  const res = await fetch(`/api/availability?start=${startDate}&end=${endDate}&serviceId=${serviceId}&staffId=${staffId}`);
+  const res = await fetch(`/api/availability?start=${start}&end=${end}&staffId=${staffId}`);
   const data = await res.json();
   return data.busySlots || [];
 }
@@ -853,48 +915,34 @@ async function createBooking(payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-  return await res.json();
+  return res.json();
 }
 
-// ─── Service IDs (replace with real IDs from Bookings) ───────────────
 function getServiceId(duration) {
-  const map = {
-    30: 'c00ae9ef-a95b-4622-bdd9-9fda1bdcd459',
-    60: '4a6dba2d-d744-4897-9604-6184286eba88',
-    90: 'c76640f9-34a7-4fdb-926e-e5d15d2f5ce5'
-  };
-  return map[duration] || '';
+  return { 30: 'c00ae9ef-a95b-4622-bdd9-9fda1bdcd459',
+           60: '4a6dba2d-d744-4897-9604-6184286eba88',
+           90: 'c76640f9-34a7-4fdb-926e-e5d15d2f5ce5' }[duration] || '';
 }
 
 const TRAINERS = [
-  { id: 'bbb5a53a-96b8-4f68-890b-05ab765b8bc4', name: 'Sherry Stanton', initials: 'SS' },
+  { id: 'bbb5a53a-96b8-4f68-890b-05ab765b8bc4', name: 'Sherry Stanton',  initials: 'SS' },
   { id: '09c5c966-6e81-4104-b093-80d496d1a5e4', name: 'Monica Fitchett', initials: 'MF' },
-  { id: '93746261-a0e8-4a2c-b3d9-c345626aa1aa', name: 'Frank Menger', initials: 'FM' },
+  { id: '93746261-a0e8-4a2c-b3d9-c345626aa1aa', name: 'Frank Menger',    initials: 'FM' },
 ];
 
-// ─── Account search ───────────────────────────────────────────────────
 document.getElementById('account-search').addEventListener('input', async function() {
   const val = this.value.trim();
   const results = document.getElementById('search-results');
-  const sel = document.getElementById('selected-account');
-  sel.style.display = 'none';
+  document.getElementById('selected-account').style.display = 'none';
   if (val.length < 2) { results.style.display = 'none'; return; }
-
   results.style.display = 'block';
   results.innerHTML = '<div class="search-result-item" style="color:var(--gray)">Searching...</div>';
-
   try {
     const accounts = await fetchAccounts(val);
-    if (!accounts.length) {
-      results.innerHTML = '<div class="search-result-item" style="color:var(--gray)">No accounts found</div>';
-      return;
-    }
-    results.innerHTML = accounts.map(a =>
-      `<div class="search-result-item" onclick="pickAccount(${JSON.stringify(a).replace(/"/g,'&quot;')})">${a.name}</div>`
-    ).join('');
-  } catch(e) {
-    results.innerHTML = '<div class="search-result-item" style="color:red">Error loading accounts</div>';
-  }
+    results.innerHTML = accounts.length
+      ? accounts.map(a => `<div class="search-result-item" onclick="pickAccount(${JSON.stringify(a).replace(/"/g,'&quot;')})">${a.name}</div>`).join('')
+      : '<div class="search-result-item" style="color:var(--gray)">No accounts found</div>';
+  } catch { results.innerHTML = '<div class="search-result-item" style="color:red">Error loading accounts</div>'; }
 });
 
 function pickAccount(account) {
@@ -912,20 +960,16 @@ function clearAccount() {
   document.getElementById('account-search').value = '';
 }
 
-// ─── Duration ────────────────────────────────────────────────────────
 function selectDuration(el, mins) {
   document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
   state.duration = mins;
 }
 
-// ─── Trainers ─────────────────────────────────────────────────────────
 function buildTrainerList() {
   const container = document.getElementById('trainer-options');
-  const divider = container.querySelector('.divider');
   TRAINERS.forEach(t => {
-    const existing = container.querySelector(`[data-trainer="${t.id}"]`);
-    if (existing) return;
+    if (container.querySelector(`[data-trainer="${t.id}"]`)) return;
     const el = document.createElement('div');
     el.className = 'trainer-option';
     el.setAttribute('data-trainer', t.id);
@@ -940,65 +984,46 @@ function selectTrainer(el, id, name) {
   el.classList.add('selected');
   state.trainer = id;
   state.trainerName = name || 'Any available';
-  const sub = document.getElementById('avail-sub');
-  sub.textContent = id === 'any' ? 'Showing availability across all trainers' : `Showing availability for ${name}`;
+  document.getElementById('avail-sub').textContent =
+    id === 'any' ? 'Showing availability across all trainers' : `Showing availability for ${name}`;
   state.slot = null;
   document.getElementById('selected-time-display').style.display = 'none';
   renderCalendar();
 }
 
-// ─── Calendar ─────────────────────────────────────────────────────────
 let busySlots = [];
 
 function getWeekStart(offset) {
-  const d = new Date();
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - d.getDay() + (offset * 7));
+  const d = new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay() + offset * 7);
   return d;
 }
 
 async function loadAvailability() {
   const ws = getWeekStart(state.weekOffset);
   const we = new Date(ws); we.setDate(ws.getDate() + 7);
-  const startISO = ws.toISOString();
-  const endISO = we.toISOString();
-  try {
-    busySlots = await fetchAvailability(startISO, endISO);
-  } catch(e) {
-    busySlots = [];
-  }
+  const start = new Date(ws); start.setDate(start.getDate() - 1);
+  const end = new Date(we); end.setDate(end.getDate() + 1);
+  try { busySlots = await fetchAvailability(start.toISOString(), end.toISOString()); }
+  catch { busySlots = []; }
 }
 
-function isSlotBusy(date, timeStr) {
-  const [time, period] = timeStr.split(' ');
-  const [hours, minutes] = time.split(':').map(Number);
-  let h = hours;
-  if (period === 'pm' && h !== 12) h += 12;
-  if (period === 'am' && h === 12) h = 0;
-
-  // Build slot times using the date's local year/month/day
-  const y = date.getFullYear();
-  const mo = date.getMonth();
-  const d = date.getDate();
-  const slotStart = new Date(y, mo, d, h, minutes || 0, 0, 0);
-  const slotEnd = new Date(slotStart);
-  slotEnd.setMinutes(slotEnd.getMinutes() + (state.duration || 60));
-
+function isSlotBusy(slotUtc) {
+  const slotEnd = new Date(slotUtc.getTime() + (state.duration || 60) * 60000);
   return busySlots.some(busy => {
     if (!busy.start || !busy.end) return false;
     const bs = new Date(busy.start);
     const be = new Date(busy.end);
     const trainerMatch = state.trainer === 'any' || busy.staffId === state.trainer;
-    return trainerMatch && slotStart < be && slotEnd > bs;
+    return trainerMatch && slotUtc < be && slotEnd > bs;
   });
 }
-
-const TIME_SLOTS = ['9:00 am','9:30 am','10:00 am','10:30 am','11:00 am','11:30 am','1:00 pm','1:30 pm','2:00 pm','2:30 pm','3:00 pm','3:30 pm','4:00 pm'];
 
 async function renderCalendar() {
   const ws = getWeekStart(state.weekOffset);
   const we = new Date(ws); we.setDate(ws.getDate() + 6);
-  document.getElementById('week-label').textContent = `${MONTHS[ws.getMonth()]} ${ws.getDate()} – ${MONTHS[we.getMonth()]} ${we.getDate()}`;
+  document.getElementById('week-label').textContent =
+    `${MONTHS[ws.getMonth()]} ${ws.getDate()} – ${MONTHS[we.getMonth()]} ${we.getDate()}`;
   document.getElementById('prev-week').disabled = state.weekOffset <= 0;
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1021,39 +1046,49 @@ async function renderCalendar() {
     heads.appendChild(h);
   }
 
-  for (let row = 0; row < TIME_SLOTS.length; row++) {
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(ws); d.setDate(ws.getDate() + i);
-      const isPast = d < today;
-      const col = document.createElement('div');
-      const time = TIME_SLOTS[row];
-      const busy = !isPast && isSlotBusy(d, time);
-      const isSelected = state.slot && state.slot.dayIdx === i && state.slot.row === row;
+  const allDaySlots = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(ws); d.setDate(ws.getDate() + i);
+    const isPast = d < today;
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    allDaySlots.push(isPast || isWeekend ? [] : getSlotsForDay(d, selectedTz));
+  }
+  const maxSlots = Math.max(...allDaySlots.map(s => s.length), 3);
 
-      if (isPast || busy) {
+  for (let row = 0; row < maxSlots; row++) {
+    for (let i = 0; i < 7; i++) {
+      const slots = allDaySlots[i];
+      const col = document.createElement('div');
+      if (!slots[row]) {
         col.className = 'time-slot unavailable';
-        col.textContent = isPast ? '' : time;
-        if (isPast) col.style.visibility = 'hidden';
+        col.style.visibility = 'hidden';
+        col.textContent = '.';
       } else {
-        col.className = 'time-slot' + (isSelected ? ' selected' : '');
-        col.textContent = time;
-        col.onclick = (() => {
-          const di = i, ri = row, t = time, date = new Date(d);
-          return () => pickSlot(di, ri, t, date);
-        })();
+        const slot = slots[row];
+        const busy = isSlotBusy(slot.utc);
+        const isSelected = state.slot && state.slot.dayIdx === i && state.slot.row === row;
+        col.className = 'time-slot' + (busy ? ' unavailable' : isSelected ? ' selected' : '');
+        col.textContent = slot.label;
+        if (!busy) {
+          col.onclick = (() => {
+            const di = i, ri = row, s = slot;
+            const d = new Date(ws); d.setDate(ws.getDate() + i);
+            return () => pickSlot(di, ri, s, d);
+          })();
+        }
       }
       slotsEl.appendChild(col);
     }
   }
 }
 
-function pickSlot(dayIdx, row, time, date) {
-  state.slot = { dayIdx, row, time, date };
-  const label = `${DAYS[date.getDay()]} ${MONTHS[date.getMonth()]} ${date.getDate()} · ${time}`;
-  state.slot.label = label;
-  const disp = document.getElementById('selected-time-display');
-  disp.textContent = 'Selected: ' + label;
-  disp.style.display = 'block';
+function pickSlot(dayIdx, row, slot, date) {
+  state.slot = { dayIdx, row, label: slot.label, utc: slot.utc, date };
+  const tzLabel = TIMEZONES.find(t => t.tz === selectedTz)?.label || selectedTz;
+  const full = `${DAYS[date.getDay()]} ${MONTHS[date.getMonth()]} ${date.getDate()} · ${slot.label} (${tzLabel})`;
+  state.slot.fullLabel = full;
+  document.getElementById('selected-time-display').textContent = 'Selected: ' + full;
+  document.getElementById('selected-time-display').style.display = 'block';
   renderCalendar();
 }
 
@@ -1062,17 +1097,11 @@ function shiftWeek(dir) {
   renderCalendar();
 }
 
-// ─── Navigation ───────────────────────────────────────────────────────
 function goTo(n) {
-  if (n === 2 && !state.account) {
-    showError('err1', 'Please select a customer account to continue.');
-    return;
-  }
+  if (n === 2 && !state.account) { showError('err1', 'Please select a customer account to continue.'); return; }
   if (n === 6) populateConfirm();
-
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen' + n).classList.add('active');
-
   for (let i = 1; i <= 5; i++) {
     const dot = document.getElementById('dot' + i);
     const line = document.getElementById('line' + i);
@@ -1082,7 +1111,6 @@ function goTo(n) {
     else if (i === n) dot.classList.add('active');
     if (line) line.className = 'step-line' + (i < n ? ' done' : '');
   }
-
   if (n === 4) renderCalendar();
   if (n === 3) buildTrainerList();
 }
@@ -1091,7 +1119,7 @@ function populateConfirm() {
   document.getElementById('conf-customer').textContent = state.account?.name || '—';
   document.getElementById('conf-sfid').textContent = state.account?.sfId || '—';
   document.getElementById('conf-duration').textContent = state.duration ? `${state.duration} minutes` : '—';
-  document.getElementById('conf-time').textContent = state.slot?.label || '—';
+  document.getElementById('conf-time').textContent = state.slot?.fullLabel || '—';
   document.getElementById('conf-trainer').textContent = state.trainerName;
   document.getElementById('conf-booker').textContent = document.getElementById('booked-by').value || '—';
   document.getElementById('conf-cemail').textContent = document.getElementById('customer-email').value || '—';
@@ -1100,55 +1128,29 @@ function populateConfirm() {
 
 function showError(id, msg) {
   const el = document.getElementById(id);
-  el.textContent = msg;
-  el.style.display = 'block';
+  el.textContent = msg; el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
+function showLoading(msg) { document.getElementById('loading-text').textContent = msg || 'Loading...'; document.getElementById('loading').classList.add('active'); }
+function hideLoading() { document.getElementById('loading').classList.remove('active'); }
 
-function showLoading(msg) {
-  document.getElementById('loading-text').textContent = msg || 'Loading...';
-  document.getElementById('loading').classList.add('active');
-}
-
-function hideLoading() {
-  document.getElementById('loading').classList.remove('active');
-}
-
-// ─── Submit ───────────────────────────────────────────────────────────
 async function submitBooking() {
   const notes = document.getElementById('session-notes').value.trim();
   const bookedBy = document.getElementById('booked-by').value.trim();
   const bookerEmail = document.getElementById('booker-email').value.trim();
   const customerEmail = document.getElementById('customer-email').value.trim();
-
-  if (!notes || !bookedBy || !bookerEmail || !customerEmail) {
-    showError('err5', 'Please fill in all required fields.');
-    return;
-  }
-
-  if (!state.slot) {
-    showError('err5', 'Please select a time slot.');
-    return;
-  }
+  if (!notes || !bookedBy || !bookerEmail || !customerEmail) { showError('err5', 'Please fill in all required fields.'); return; }
+  if (!state.slot) { showError('err5', 'Please select a time slot.'); return; }
 
   showLoading('Creating booking...');
 
-  // Build start and end times
-  const date = state.slot.date;
-  const [time, period] = state.slot.time.split(' ');
-  const [hours, minutes] = time.split(':').map(Number);
-  let h = hours;
-  if (period === 'pm' && h !== 12) h += 12;
-  if (period === 'am' && h === 12) h = 0;
-  const start = new Date(date);
-  start.setHours(h, minutes || 0, 0, 0);
-  const end = new Date(start);
-  end.setMinutes(end.getMinutes() + state.duration);
+  const start = state.slot.utc;
+  const end = new Date(start.getTime() + state.duration * 60000);
 
   const payload = {
     buildName: state.account.buildName,
     customerEmail,
-    customerName: document.getElementById('booked-by').value.trim(),
+    customerName: bookedBy,
     serviceId: getServiceId(state.duration),
     staffId: state.trainer,
     startDateTime: start.toISOString(),
@@ -1163,24 +1165,17 @@ async function submitBooking() {
   try {
     const result = await createBooking(payload);
     hideLoading();
-
-    if (result.error) {
-      showError('err5', 'Booking failed: ' + result.error);
-      return;
-    }
-
+    if (result.error) { showError('err5', 'Booking failed: ' + result.error); return; }
     document.getElementById('success-detail').textContent = `${result.meetingTitle} · Teams invite sent.`;
     goTo(7);
-
-  } catch(e) {
-    hideLoading();
-    showError('err5', 'Something went wrong. Please try again.');
-  }
+  } catch { hideLoading(); showError('err5', 'Something went wrong. Please try again.'); }
 }
 
 function resetForm() {
   state.account = null; state.duration = null; state.trainer = 'any';
   state.trainerName = 'Any available'; state.slot = null; state.weekOffset = 0;
+  selectedTz = 'America/New_York';
+  document.getElementById('tz-select').value = 'America/New_York';
   document.getElementById('account-search').value = '';
   document.getElementById('selected-account').style.display = 'none';
   document.getElementById('session-notes').value = '';
@@ -1192,10 +1187,7 @@ function resetForm() {
   document.querySelector('[data-trainer="any"]').classList.add('selected');
   goTo(1);
 }
-  
-  
-// ─── Init ─────────────────────────────────────────────────────────────
+
 renderCalendar();
-</script>
 </body>
 </html>
