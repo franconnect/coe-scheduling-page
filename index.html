@@ -975,10 +975,12 @@ function isSlotBusy(date, timeStr) {
   let h = hours;
   if (period === 'pm' && h !== 12) h += 12;
   if (period === 'am' && h === 12) h = 0;
-  
-  // Create slot time in local time
-  const slotStart = new Date(date);
-  slotStart.setHours(h, minutes || 0, 0, 0);
+
+  // Build slot times using the date's local year/month/day
+  const y = date.getFullYear();
+  const mo = date.getMonth();
+  const d = date.getDate();
+  const slotStart = new Date(y, mo, d, h, minutes || 0, 0, 0);
   const slotEnd = new Date(slotStart);
   slotEnd.setMinutes(slotEnd.getMinutes() + (state.duration || 60));
 
