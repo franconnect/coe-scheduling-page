@@ -24,6 +24,21 @@ async function getAccessToken() {
 export default async function handler(req, res) {
   try {
     const token = await getAccessToken();
+
+    // Frank is in Arizona (UTC-7, no DST)
+    // His 9am-5pm Arizona = 16:00-00:00 UTC
+    const workingHours = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'].map(day => ({
+      '@odata.type': '#microsoft.graph.bookingWorkHours',
+      'day@odata.type': '#microsoft.graph.dayOfWeek',
+      day,
+      'timeSlots@odata.type': '#Collection(microsoft.graph.bookingWorkTimeSlot)',
+      timeSlots: ['saturday','sunday'].includes(day) ? [] : [{
+        '@odata.type': '#microsoft.graph.bookingWorkTimeSlot',
+        startTime: '16:00:00.0000000',
+        endTime: '00:00:00.0000000'
+      }]
+    }));
+
     const r = await fetch(
       `https://graph.microsoft.com/v1.0/solutions/bookingBusinesses/${CALENDAR_ID}/staffMembers/${FRANK_ID}`,
       {
@@ -32,11 +47,15 @@ export default async function handler(req, res) {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ timeZone: 'America/Phoenix' })
+        body: JSON.stringify({
+          '@odata.type': '#microsoft.graph.bookingStaffMember',
+          timeZone: 'America/Phoenix',
+          useBusinessHours: false,
+          workingHours
+        })
       }
     );
-    const data = await r.text();
-    return res.status(r.status).json({ status: r.status, response: data });
+    return res.status(r.status).json({ status: r.status });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
