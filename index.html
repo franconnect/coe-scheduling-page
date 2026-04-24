@@ -1145,7 +1145,8 @@ function populateConfirm() {
   document.getElementById('conf-time').textContent = state.slot?.fullLabel || '—';
   document.getElementById('conf-trainer').textContent = state.trainerName;
   document.getElementById('conf-booker').textContent = document.getElementById('booked-by').value || '—';
- document.getElementById('conf-cname').textContent = document.getElementById('customer-name').value || '—';
+document.getElementById('conf-cname').textContent = document.getElementById('customer-name').value || '—';
+document.getElementById('conf-cemail').textContent = document.getElementById('customer-email').value || '—';
   document.getElementById('conf-notes').textContent = document.getElementById('session-notes').value || '—';
 }
 
