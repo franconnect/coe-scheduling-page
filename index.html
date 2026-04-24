@@ -1017,8 +1017,8 @@ function isSlotBusy(slotUtc) {
   const slotEnd = new Date(slotUtc.getTime() + (state.duration || 60) * 60000);
   return busySlots.some(busy => {
     if (!busy.start || !busy.end) return false;
-    const bs = new Date(busy.start);
-    const be = new Date(busy.end);
+   const bs = new Date(busy.start.endsWith('Z') ? busy.start : busy.start + 'Z');
+const be = new Date(busy.end.endsWith('Z') ? busy.end : busy.end + 'Z');
     const trainerMatch = state.trainer === 'any' || busy.staffId === state.trainer;
     return trainerMatch && slotUtc < be && slotEnd > bs;
   });
