@@ -32,11 +32,11 @@ export default async function handler(req, res) {
       'day@odata.type': '#microsoft.graph.dayOfWeek',
       day,
       'timeSlots@odata.type': '#Collection(microsoft.graph.bookingWorkTimeSlot)',
-      timeSlots: ['saturday','sunday'].includes(day) ? [] : [{
-        '@odata.type': '#microsoft.graph.bookingWorkTimeSlot',
-        startTime: '16:00:00.0000000',
-        endTime: '00:00:00.0000000'
-      }]
+     timeSlots: ['saturday','sunday'].includes(day) ? [] : [{
+  '@odata.type': '#microsoft.graph.bookingWorkTimeSlot',
+  startTime: '09:00:00.0000000',
+  endTime: '17:00:00.0000000'
+}]
     }));
 
     const r = await fetch(
