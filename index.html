@@ -891,7 +891,7 @@ function localWallToUTC(y, mo, d, h, m, tz) {
 function getSlotsForDay(calDate, tz) {
   const slots = [];
   const y = calDate.getFullYear(), mo = calDate.getMonth(), d = calDate.getDate();
-  for (let h = 8; h < 18; h++) {
+  for (let h = 9; h < 18; h++) {
     for (let m = 0; m < 60; m += 30) {
       const utc = localWallToUTC(y, mo, d, h, m, tz);
       const label = new Date(2000, 0, 1, h, m).toLocaleTimeString('en-US',
