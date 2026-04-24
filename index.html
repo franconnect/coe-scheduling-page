@@ -678,7 +678,10 @@ footer {
       <div class="step-heading">Select customer</div>
       <div class="step-sub">Search by account name</div>
       <div class="error-banner" id="err1"></div>
-      <div class="field-group">
+     <div class="field-group">
+  <label>Customer contact name <span class="req">*</span></label>
+  <input type="text" id="customer-name" placeholder="First and last name">
+</div> <div class="field-group">
         <label>Customer account <span class="req">*</span></label>
         <input type="text" class="search-input" id="account-search" placeholder="Type to search accounts..." autocomplete="off">
         <div class="search-results" id="search-results"></div>
@@ -801,6 +804,7 @@ footer {
         <tr><td>Date &amp; time</td><td id="conf-time">—</td></tr>
         <tr><td>Trainer</td><td id="conf-trainer">—</td></tr>
         <tr><td>Booked by</td><td id="conf-booker">—</td></tr>
+    <tr><td>Customer name</td><td id="conf-cname">—</td></tr>
         <tr><td>Customer email</td><td id="conf-cemail">—</td></tr>
         <tr><td style="vertical-align:top;padding-top:12px">Notes</td><td id="conf-notes" style="white-space:pre-wrap;line-height:1.5;font-weight:400;color:var(--gray)">—</td></tr>
       </table>
@@ -1141,7 +1145,7 @@ function populateConfirm() {
   document.getElementById('conf-time').textContent = state.slot?.fullLabel || '—';
   document.getElementById('conf-trainer').textContent = state.trainerName;
   document.getElementById('conf-booker').textContent = document.getElementById('booked-by').value || '—';
-  document.getElementById('conf-cemail').textContent = document.getElementById('customer-email').value || '—';
+ document.getElementById('conf-cname').textContent = document.getElementById('customer-name').value || '—';
   document.getElementById('conf-notes').textContent = document.getElementById('session-notes').value || '—';
 }
 
@@ -1158,7 +1162,8 @@ async function submitBooking() {
   const bookedBy = document.getElementById('booked-by').value.trim();
   const bookerEmail = document.getElementById('booker-email').value.trim();
   const customerEmail = document.getElementById('customer-email').value.trim();
-  if (!notes || !bookedBy || !bookerEmail || !customerEmail) { showError('err5', 'Please fill in all required fields.'); return; }
+const customerName = document.getElementById('customer-name').value.trim();
+  if (!notes || !bookedBy || !bookerEmail || !customerEmail || !customerName) { showError('err5', 'Please fill in all required fields.'); return; }
   if (!state.slot) { showError('err5', 'Please select a time slot.'); return; }
 
   showLoading('Creating booking...');
@@ -1169,7 +1174,7 @@ async function submitBooking() {
   const payload = {
     buildName: state.account.buildName,
     customerEmail,
-    customerName: bookedBy,
+customerName: customerName,
     serviceId: getServiceId(state.duration),
     staffId: state.trainer,
     startDateTime: start.toISOString(),
@@ -1200,7 +1205,7 @@ function resetForm() {
   document.getElementById('session-notes').value = '';
   document.getElementById('booked-by').value = '';
   document.getElementById('booker-email').value = '';
-  document.getElementById('customer-email').value = '';
+  document.getElementById('customer-name').value = '';
   document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
   document.querySelectorAll('.trainer-option').forEach(o => o.classList.remove('selected'));
   document.querySelector('[data-trainer="any"]').classList.add('selected');
