@@ -1015,13 +1015,27 @@ async function loadAvailability() {
 
 function isSlotBusy(slotUtc) {
   const slotEnd = new Date(slotUtc.getTime() + (state.duration || 60) * 60000);
-  return busySlots.some(busy => {
-    if (!busy.start || !busy.end) return false;
-   const bs = new Date(busy.start.endsWith('Z') ? busy.start : busy.start + 'Z');
-const be = new Date(busy.end.endsWith('Z') ? busy.end : busy.end + 'Z');
-    const trainerMatch = state.trainer === 'any' || busy.staffId === state.trainer;
-    return trainerMatch && slotUtc < be && slotEnd > bs;
-  });
+
+  if (state.trainer !== 'any') {
+    // Specific trainer — slot is busy if that trainer has any overlap
+    return busySlots.some(busy => {
+      if (!busy.start || !busy.end || busy.staffId !== state.trainer) return false;
+      const bs = new Date(busy.start.endsWith('Z') ? busy.start : busy.start + 'Z');
+      const be = new Date(busy.end.endsWith('Z') ? busy.end : busy.end + 'Z');
+      return slotUtc < be && slotEnd > bs;
+    });
+  } else {
+    // Any available — slot is only busy if ALL trainers are busy
+    const trainerIds = TRAINERS.map(t => t.id);
+    return trainerIds.every(trainerId => {
+      return busySlots.some(busy => {
+        if (!busy.start || !busy.end || busy.staffId !== trainerId) return false;
+        const bs = new Date(busy.start.endsWith('Z') ? busy.start : busy.start + 'Z');
+        const be = new Date(busy.end.endsWith('Z') ? busy.end : busy.end + 'Z');
+        return slotUtc < be && slotEnd > bs;
+      });
+    });
+  }
 }
 
 async function renderCalendar() {
