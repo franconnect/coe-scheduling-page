@@ -32,10 +32,10 @@ export default async function handler(req, res) {
       'day@odata.type': '#microsoft.graph.dayOfWeek',
       day,
       'timeSlots@odata.type': '#Collection(microsoft.graph.bookingWorkTimeSlot)',
-     timeSlots: ['saturday','sunday'].includes(day) ? [] : [{
+timeSlots: ['saturday','sunday'].includes(day) ? [] : [{
   '@odata.type': '#microsoft.graph.bookingWorkTimeSlot',
-  startTime: '09:00:00.0000000',
-  endTime: '17:00:00.0000000'
+  startTime: '16:00:00.0000000',
+  endTime: '23:30:00.0000000'
 }]
     }));
 
