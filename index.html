@@ -908,7 +908,7 @@ async function fetchAccounts(query) {
   return data.accounts || [];
 }
 
-async function fetchAvailability(start, end) {
+
 async function fetchAvailability(start, end) {
   const res = await fetch(`/api/availability?start=${start}&end=${end}`);  const data = await res.json();
   return data.busySlots || [];
