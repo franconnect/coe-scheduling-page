@@ -909,9 +909,8 @@ async function fetchAccounts(query) {
 }
 
 async function fetchAvailability(start, end) {
-  const staffId = state.trainer === 'any' ? '' : state.trainer;
-  const res = await fetch(`/api/availability?start=${start}&end=${end}&staffId=${staffId}`);
-  const data = await res.json();
+async function fetchAvailability(start, end) {
+  const res = await fetch(`/api/availability?start=${start}&end=${end}`);  const data = await res.json();
   return data.busySlots || [];
 }
 
