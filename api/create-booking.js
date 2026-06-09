@@ -167,10 +167,10 @@ module.exports = async function handler(req, res) {
     }
 
     const rescheduleUrl = selfServiceId
-      ? `https://outlook.office.com/book/${CALENDAR_ID}/id/${selfServiceId}?ismsaljsauthenabled=true`
+      ? `https://outlook.office.com/book/${CALENDAR_ID}/id/${selfServiceId}?isAnonymous=true`
       : null;
     const cancelUrl = selfServiceId
-      ? `https://outlook.office.com/book/${CALENDAR_ID}/id/${selfServiceId}?cancel=true&ismsaljsauthenabled=true`
+      ? `https://outlook.office.com/book/${CALENDAR_ID}/id/${selfServiceId}?cancel=true&isAnonymous=true`
       : null;
 
     try {
