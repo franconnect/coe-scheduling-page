@@ -10,13 +10,11 @@ async function getAccessToken() {
     client_secret: CLIENT_SECRET,
     scope: 'https://graph.microsoft.com/.default'
   });
-
   const res = await fetch(`https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params.toString()
   });
-
   const data = await res.json();
   if (!data.access_token) throw new Error('Failed to get token');
   return data.access_token;
@@ -26,7 +24,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -42,17 +39,22 @@ export default async function handler(req, res) {
     bookedBy,
     bookerEmail,
     sfId,
-    duration
+    duration,
+    sessionType
   } = req.body;
 
-  if (!buildName || !customerEmail || !customerName || !startDateTime || !endDateTime) {
+  if (!customerEmail || !customerName || !startDateTime || !endDateTime) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const cleanBuildName = buildName.replace(/\s*\(.*?\)\s*/g, '').trim();
+  // Build meeting title: YYYY-MM-DD Session Type
   const date = new Date(startDateTime);
   const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-  const meetingTitle = `${dateStr} COE Consult — ${cleanBuildName} — ${customerEmail} — ${customerName}`;
+  const titleBase = sessionType || 'COE Consult';
+  const meetingTitle = `${dateStr} ${titleBase}`;
+
+  // Clean build name for custom question (strip parentheticals)
+  const cleanBuildName = (buildName || '').replace(/\s*\(.*?\)\s*/g, '').trim();
 
   try {
     const token = await getAccessToken();
@@ -72,7 +74,7 @@ export default async function handler(req, res) {
         "dateTime": endDateTime,
         "timeZone": "UTC"
       },
-      "additionalInformation": `Booked by: ${bookedBy} (${bookerEmail}) | Salesforce ID: ${sfId}`,
+      "additionalInformation": `Booked by: ${bookedBy} (${bookerEmail}) | SF ID: ${sfId} | Session: ${titleBase}`,
       ...(staffId && staffId !== 'any' ? { "staffMemberIds": [staffId] } : {}),
       "customers": [{
         "@odata.type": "#microsoft.graph.bookingCustomerInformation",
@@ -108,16 +110,11 @@ export default async function handler(req, res) {
       }]
     };
 
-    console.error('Sending to Bookings:', JSON.stringify(appointment));
-
     const bookingsRes = await fetch(
       `https://graph.microsoft.com/v1.0/solutions/bookingBusinesses/${CALENDAR_ID}/appointments`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(appointment)
       }
     );
