@@ -277,9 +277,14 @@ footer { text-align: center; padding: 1.5rem; font-size: 12px; color: var(--gray
         <input type="text" id="customer-name" placeholder="First and last name">
       </div>
       <div class="field-group">
-        <label>Customer contact email <span class="req">*</span></label>
+        <label>Customer meeting contact email <span class="req">*</span></label>
         <input type="email" id="customer-email" placeholder="customer@example.com">
-        <div class="hint">Recording link will be sent here after the session.</div>
+        <div class="hint">Primary contact — recording link and survey will be sent here.</div>
+      </div>
+      <div class="field-group">
+        <label>Additional recipients</label>
+        <input type="text" id="additional-emails" placeholder="email1@example.com, email2@example.com">
+        <div class="hint">Optional — comma-separated list of additional people to invite and receive the recording.</div>
       </div>
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="goTo(4)">← Back</button>
@@ -301,6 +306,7 @@ footer { text-align: center; padding: 1.5rem; font-size: 12px; color: var(--gray
         <tr><td>Booker name</td><td id="conf-booker">—</td></tr>
         <tr><td>Customer name</td><td id="conf-cname">—</td></tr>
         <tr><td>Customer email</td><td id="conf-cemail">—</td></tr>
+        <tr><td>Additional recipients</td><td id="conf-additional">—</td></tr>
         <tr><td style="vertical-align:top;padding-top:12px">Notes</td><td id="conf-notes" style="white-space:pre-wrap;line-height:1.5;font-weight:400;color:var(--gray)">—</td></tr>
       </table>
       <button class="btn btn-confirm" onclick="submitBooking()">Confirm booking</button>
@@ -721,6 +727,7 @@ function populateConfirm() {
   document.getElementById('conf-booker').textContent = document.getElementById('booked-by').value || '—';
   document.getElementById('conf-cname').textContent = document.getElementById('customer-name').value || '—';
   document.getElementById('conf-cemail').textContent = document.getElementById('customer-email').value || '—';
+  document.getElementById('conf-additional').textContent = document.getElementById('additional-emails').value || 'None';
   document.getElementById('conf-notes').textContent = document.getElementById('session-notes').value || '—';
 }
 
@@ -758,7 +765,8 @@ async function submitBooking() {
     sfId: state.account.sfId,
     duration: state.duration,
     sessionType: state.session?.name || '',
-    trainerName: state.trainerName
+    trainerName: state.trainerName,
+    additionalEmails: document.getElementById('additional-emails').value.trim()
   };
 
   try {
@@ -784,6 +792,7 @@ function resetForm() {
   document.getElementById('booker-email').value = '';
   document.getElementById('customer-email').value = '';
   document.getElementById('customer-name').value = '';
+  document.getElementById('additional-emails').value = '';
   document.querySelectorAll('.trainer-option').forEach(o => o.classList.remove('selected'));
   document.querySelector('[data-trainer="any"]').classList.add('selected');
   goTo(1);
