@@ -59,7 +59,6 @@ input.search-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
 .selected-account { padding: 10px 14px; background: var(--blue-pale); border: 1.5px solid var(--blue); border-radius: var(--radius); font-size: 14px; color: var(--blue); font-weight: 600; display: none; align-items: center; justify-content: space-between; }
 .selected-account button { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 16px; padding: 0 4px; line-height: 1; }
 .selected-account button:hover { color: var(--orange); }
-/* Session type picker */
 .module-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 1rem; }
 .module-btn { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); background: white; cursor: pointer; text-align: left; transition: var(--transition); font-family: 'Nunito Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--text); }
 .module-btn:hover { border-color: var(--blue); background: var(--blue-pale); color: var(--blue); }
@@ -74,7 +73,6 @@ input.search-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
 .selected-session { padding: 10px 14px; background: var(--blue-pale); border: 1.5px solid var(--blue); border-radius: var(--radius); font-size: 14px; color: var(--blue); font-weight: 600; display: none; align-items: center; justify-content: space-between; margin-top: 1rem; }
 .selected-session button { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 16px; padding: 0 4px; }
 .loading-sessions { font-size: 13px; color: var(--gray); padding: 1rem 0; text-align: center; }
-/* Trainer */
 .trainer-options { display: flex; flex-direction: column; gap: 8px; }
 .trainer-option { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: var(--transition); }
 .trainer-option:hover { border-color: var(--blue); background: var(--blue-pale); }
@@ -89,7 +87,6 @@ input.search-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
 .recommended-badge { margin-left: auto; font-size: 11px; font-weight: 700; padding: 3px 8px; background: #e8f8ef; color: #27ae60; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; }
 .divider { height: 1px; background: var(--border); margin: 12px 0; position: relative; }
 .divider span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: white; padding: 0 10px; font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-/* Calendar */
 .week-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 .week-nav-btn { background: none; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 6px 14px; font-size: 13px; font-family: 'Nunito Sans', sans-serif; color: var(--blue); cursor: pointer; transition: var(--transition); font-weight: 600; }
 .week-nav-btn:hover { border-color: var(--blue); background: var(--blue-pale); }
@@ -286,7 +283,7 @@ footer { text-align: center; padding: 1.5rem; font-size: 12px; color: var(--gray
       </div>
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="goTo(4)">← Back</button>
-        <button class="btn btn-primary" onclick="goTo(6)">Review booking →</button>
+        <button class="btn btn-primary" onclick="validateAndReview()">Review booking →</button>
       </div>
     </div>
 
@@ -328,7 +325,7 @@ footer { text-align: center; padding: 1.5rem; font-size: 12px; color: var(--gray
 <script>
 const state = {
   account: null,
-  session: null,      // { name, module, duration, trainerIds }
+  session: null,
   duration: null,
   trainer: 'any',
   trainerName: 'Any available',
@@ -339,7 +336,6 @@ const state = {
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-// ─── Timezone ─────────────────────────────────────────────────────────
 const TIMEZONES = [
   { label: 'Eastern (ET)',         tz: 'America/New_York' },
   { label: 'Central (CT)',         tz: 'America/Chicago' },
@@ -402,7 +398,6 @@ function getSlotsForDay(calDate, tz) {
   return slots;
 }
 
-// ─── Service IDs ──────────────────────────────────────────────────────
 function getServiceId(duration) {
   return {
     30:  'c00ae9ef-a95b-4622-bdd9-9fda1bdcd459',
@@ -418,7 +413,6 @@ const ALL_TRAINERS = [
   { id: '93746261-a0e8-4a2c-b3d9-c345626aa1aa', name: 'Frank Menger',    initials: 'FM' },
 ];
 
-// ─── Session types ────────────────────────────────────────────────────
 let sessionTypesData = null;
 let selectedModule = null;
 
@@ -436,7 +430,6 @@ async function renderSessionPicker() {
     const data = await loadSessionTypes();
     const modules = Object.keys(data.modules).sort();
     if (!selectedModule) {
-      // Show module grid
       picker.innerHTML = `
         <div style="font-size:13px;color:var(--gray);margin-bottom:0.75rem;font-weight:600;">Select a module:</div>
         <div class="module-grid">
@@ -445,7 +438,6 @@ async function renderSessionPicker() {
           </button>`).join('')}
         </div>`;
     } else {
-      // Show courses for selected module
       const courses = data.modules[selectedModule] || [];
       picker.innerHTML = `
         <button class="back-to-modules" onclick="backToModules()">← ${selectedModule}</button>
@@ -461,43 +453,30 @@ async function renderSessionPicker() {
   }
 }
 
-function selectModule(mod) {
-  selectedModule = mod;
-  renderSessionPicker();
-}
-
-function backToModules() {
-  selectedModule = null;
-  renderSessionPicker();
-}
+function selectModule(mod) { selectedModule = mod; renderSessionPicker(); }
+function backToModules() { selectedModule = null; renderSessionPicker(); }
 
 function selectSession(course) {
   state.session = course;
   state.duration = course.duration;
   document.getElementById('selected-session').style.display = 'flex';
   document.getElementById('selected-session-name').textContent = `${course.name} · ${course.duration} min`;
-  // Reset trainer since eligible trainers may have changed
   state.trainer = 'any';
   state.trainerName = 'Any available';
   renderSessionPicker();
 }
 
 function clearSession() {
-  state.session = null;
-  state.duration = null;
+  state.session = null; state.duration = null;
   document.getElementById('selected-session').style.display = 'none';
   selectedModule = null;
   renderSessionPicker();
 }
 
-// ─── Trainer list filtered by session ─────────────────────────────────
 function buildTrainerList() {
   const container = document.getElementById('trainer-options');
-  // Remove old specific trainer buttons (keep "any" and divider)
   container.querySelectorAll('[data-trainer]:not([data-trainer="any"])').forEach(el => el.remove());
-
   const eligibleIds = state.session ? state.session.trainerIds : ALL_TRAINERS.map(t => t.id);
-
   ALL_TRAINERS.forEach(t => {
     const el = document.createElement('div');
     const eligible = eligibleIds.includes(t.id);
@@ -507,14 +486,11 @@ function buildTrainerList() {
     el.innerHTML = `<div class="trainer-avatar">${t.initials}</div><div><div class="trainer-name">${t.name}</div><div class="trainer-sub">${eligible ? 'FranConnect trainer' : 'Not available for this session'}</div></div>`;
     container.appendChild(el);
   });
-
-  // Update "any" option to only consider eligible trainers
   const anyEl = container.querySelector('[data-trainer="any"]');
   if (anyEl) {
     anyEl.onclick = () => selectTrainer(anyEl, 'any');
     if (state.trainer === 'any') anyEl.classList.add('selected');
   }
-
   if (state.session) {
     const names = ALL_TRAINERS.filter(t => eligibleIds.includes(t.id)).map(t => t.name.split(' ')[0]);
     document.getElementById('trainer-sub').textContent = `Available for this session: ${names.join(', ')}`;
@@ -535,7 +511,6 @@ function selectTrainer(el, id, name) {
   renderCalendar();
 }
 
-// ─── API ──────────────────────────────────────────────────────────────
 async function fetchAccounts(query) {
   const res = await fetch(`/api/accounts?q=${encodeURIComponent(query)}`);
   return (await res.json()).accounts || [];
@@ -554,7 +529,6 @@ async function createBooking(payload) {
   return res.json();
 }
 
-// ─── Account search ───────────────────────────────────────────────────
 document.getElementById('account-search').addEventListener('input', async function() {
   const val = this.value.trim();
   const results = document.getElementById('search-results');
@@ -585,7 +559,6 @@ function clearAccount() {
   document.getElementById('account-search').value = '';
 }
 
-// ─── Calendar ─────────────────────────────────────────────────────────
 let busySlots = [];
 
 function getWeekStart(offset) {
@@ -611,7 +584,6 @@ function getEligibleTrainerIds() {
 function isSlotBusy(slotUtc) {
   const slotEnd = new Date(slotUtc.getTime() + (state.duration || 60) * 60000);
   const eligibleIds = getEligibleTrainerIds();
-
   if (state.trainer !== 'any') {
     return busySlots.some(busy => {
       if (!busy.start || !busy.end || busy.staffId !== state.trainer) return false;
@@ -620,7 +592,6 @@ function isSlotBusy(slotUtc) {
       return slotUtc < be && slotEnd > bs;
     });
   } else {
-    // Slot is busy only if ALL eligible trainers are busy
     return eligibleIds.every(trainerId => {
       return busySlots.some(busy => {
         if (!busy.start || !busy.end || busy.staffId !== trainerId) return false;
@@ -638,15 +609,12 @@ async function renderCalendar() {
   document.getElementById('week-label').textContent =
     `${MONTHS[ws.getMonth()]} ${ws.getDate()} – ${MONTHS[we.getMonth()]} ${we.getDate()}`;
   document.getElementById('prev-week').disabled = state.weekOffset <= 0;
-
   const today = new Date(); today.setHours(0,0,0,0);
   const heads = document.getElementById('cal-heads');
   const slotsEl = document.getElementById('cal-slots');
   heads.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--gray);padding:8px 0">Loading availability...</div>';
   slotsEl.innerHTML = '';
-
   await loadAvailability();
-
   heads.innerHTML = '';
   for (let i = 0; i < 7; i++) {
     const d = new Date(ws); d.setDate(ws.getDate() + i);
@@ -658,7 +626,6 @@ async function renderCalendar() {
     h.innerHTML = `<div class="cal-day-name">${DAYS[d.getDay()]}</div><div class="cal-day-num ${numClass}">${d.getDate()}</div>`;
     heads.appendChild(h);
   }
-
   const allDaySlots = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(ws); d.setDate(ws.getDate() + i);
@@ -667,7 +634,6 @@ async function renderCalendar() {
     allDaySlots.push(isPast || isWeekend ? [] : getSlotsForDay(d, selectedTz));
   }
   const maxSlots = Math.max(...allDaySlots.map(s => s.length), 3);
-
   for (let row = 0; row < maxSlots; row++) {
     for (let i = 0; i < 7; i++) {
       const slots = allDaySlots[i];
@@ -710,12 +676,10 @@ function shiftWeek(dir) {
   renderCalendar();
 }
 
-// ─── Navigation ───────────────────────────────────────────────────────
 function goTo(n) {
   if (n === 2 && !state.account) { showError('err1', 'Please select a customer account to continue.'); return; }
   if (n === 3 && !state.session) { showError('err2', 'Please select a session type to continue.'); return; }
   if (n === 6) populateConfirm();
-
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen' + n).classList.add('active');
   for (let i = 1; i <= 5; i++) {
@@ -730,6 +694,21 @@ function goTo(n) {
   if (n === 2) renderSessionPicker();
   if (n === 3) buildTrainerList();
   if (n === 4) renderCalendar();
+}
+
+function validateAndReview() {
+  const notes = document.getElementById('session-notes').value.trim();
+  const bookedBy = document.getElementById('booked-by').value.trim();
+  const bookerEmail = document.getElementById('booker-email').value.trim();
+  const customerEmail = document.getElementById('customer-email').value.trim();
+  const customerName = document.getElementById('customer-name').value.trim();
+  if (!notes) { showError('err5', 'Please enter session notes before continuing.'); return; }
+  if (!bookedBy) { showError('err5', 'Please enter your name before continuing.'); return; }
+  if (!bookerEmail) { showError('err5', 'Please enter your email before continuing.'); return; }
+  if (!customerName) { showError('err5', 'Please enter the customer contact name before continuing.'); return; }
+  if (!customerEmail) { showError('err5', 'Please enter the customer contact email before continuing.'); return; }
+  if (!state.slot) { showError('err5', 'Please go back and select a time slot.'); return; }
+  goTo(6);
 }
 
 function populateConfirm() {
@@ -748,20 +727,17 @@ function populateConfirm() {
 function showError(id, msg) {
   const el = document.getElementById(id);
   el.textContent = msg; el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 4000);
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 function showLoading(msg) { document.getElementById('loading-text').textContent = msg || 'Loading...'; document.getElementById('loading').classList.add('active'); }
 function hideLoading() { document.getElementById('loading').classList.remove('active'); }
 
-// ─── Submit ───────────────────────────────────────────────────────────
 async function submitBooking() {
   const notes = document.getElementById('session-notes').value.trim();
   const bookedBy = document.getElementById('booked-by').value.trim();
   const bookerEmail = document.getElementById('booker-email').value.trim();
   const customerEmail = document.getElementById('customer-email').value.trim();
   const customerName = document.getElementById('customer-name').value.trim();
-  if (!notes || !bookedBy || !bookerEmail || !customerEmail || !customerName) { showError('err5', 'Please fill in all required fields.'); return; }
-  if (!state.slot) { showError('err5', 'Please select a time slot.'); return; }
 
   showLoading('Creating booking...');
 
@@ -781,7 +757,8 @@ async function submitBooking() {
     bookerEmail,
     sfId: state.account.sfId,
     duration: state.duration,
-    sessionType: state.session?.name || ''
+    sessionType: state.session?.name || '',
+    trainerName: state.trainerName
   };
 
   try {
@@ -793,7 +770,6 @@ async function submitBooking() {
   } catch { hideLoading(); showError('err5', 'Something went wrong. Please try again.'); }
 }
 
-// ─── Reset ────────────────────────────────────────────────────────────
 function resetForm() {
   state.account = null; state.session = null; state.duration = null;
   state.trainer = 'any'; state.trainerName = 'Any available';
@@ -813,7 +789,6 @@ function resetForm() {
   goTo(1);
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────
 renderCalendar();
 </script>
 </body>
