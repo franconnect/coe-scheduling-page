@@ -168,4 +168,6 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error('Create booking error:', err);
-    return re
+    return res.status(500).json({ error: 'Failed to create booking', detail: err.message });
+  }
+};
