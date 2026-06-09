@@ -21,12 +21,19 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-async function sendBookerConfirmation(token, { bookerEmail, bookedBy, customerName, meetingTitle, startDateTime, trainerName, manageUrl }) {
+async function sendBookerConfirmation(token, { bookerEmail, bookedBy, customerName, meetingTitle, startDateTime, trainerName, rescheduleUrl, cancelUrl }) {
   const startDate = new Date(startDateTime);
   const formattedDate = startDate.toLocaleString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
   });
+
+  const rescheduleBtn = rescheduleUrl
+    ? `<a href="${rescheduleUrl}" style="display:inline-block;background:#134564;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">Reschedule</a>`
+    : '';
+  const cancelBtn = cancelUrl
+    ? `<a href="${cancelUrl}" style="display:inline-block;background:white;color:#134564;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;border:1.5px solid #134564;">Cancel</a>`
+    : '';
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#2c2c2c;">
@@ -42,17 +49,14 @@ async function sendBookerConfirmation(token, { bookerEmail, bookedBy, customerNa
           <tr><td style="padding:8px 0;color:#717171;font-size:13px;">Date &amp; time</td><td style="padding:8px 0;font-weight:600;">${formattedDate}</td></tr>
           <tr><td style="padding:8px 0;color:#717171;font-size:13px;">Trainer</td><td style="padding:8px 0;font-weight:600;">${trainerName}</td></tr>
         </table>
+        ${rescheduleUrl || cancelUrl ? `
         <p style="margin:0 0 12px;font-size:14px;">Need to make a change?</p>
         <table style="border-collapse:collapse;">
           <tr>
-            <td style="padding-right:12px;">
-              <a href="${manageUrl}" style="display:inline-block;background:#134564;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">Reschedule</a>
-            </td>
-            <td>
-              <a href="${manageUrl}" style="display:inline-block;background:white;color:#134564;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;border:1.5px solid #134564;">Cancel</a>
-            </td>
+            <td style="padding-right:12px;">${rescheduleBtn}</td>
+            <td>${cancelBtn}</td>
           </tr>
-        </table>
+        </table>` : ''}
         <p style="margin:24px 0 0;font-size:12px;color:#717171;">The customer will receive their own confirmation email with a Teams meeting link. After the session, the recording will be automatically shared with the customer.</p>
       </div>
       <div style="background:#f5f5f3;padding:12px 24px;font-size:12px;color:#717171;">
@@ -147,12 +151,33 @@ module.exports = async function handler(req, res) {
 
     const created = await bookingsRes.json();
 
-    const manageUrl = `https://outlook.office.com/bookings/manage?appointmentId=${created.id}&businessId=${encodeURIComponent(CALENDAR_ID)}`;
+    // Fetch appointment back to get selfServiceAppointmentId
+    let selfServiceId = null;
+    try {
+      const fetchRes = await fetch(
+        `https://graph.microsoft.com/v1.0/solutions/bookingBusinesses/${CALENDAR_ID}/appointments/${encodeURIComponent(created.id)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const fullAppt = await fetchRes.json();
+      console.error('Full appt keys:', Object.keys(fullAppt).join(','));
+      selfServiceId = fullAppt.selfServiceAppointmentId;
+      console.error('selfServiceAppointmentId:', selfServiceId);
+    } catch(e) {
+      console.error('Fetch appt failed:', e.message);
+    }
+
+    const rescheduleUrl = selfServiceId
+      ? `https://outlook.office.com/book/${CALENDAR_ID}/id/${selfServiceId}?ismsaljsauthenabled=true`
+      : null;
+    const cancelUrl = selfServiceId
+      ? `https://outlook.office.com/book/${CALENDAR_ID}/id/${selfServiceId}?cancel=true&ismsaljsauthenabled=true`
+      : null;
 
     try {
       await sendBookerConfirmation(token, {
         bookerEmail, bookedBy, customerName, meetingTitle,
-        startDateTime, trainerName: trainerName || 'Assigned trainer', manageUrl
+        startDateTime, trainerName: trainerName || 'Assigned trainer',
+        rescheduleUrl, cancelUrl
       });
     } catch (emailErr) {
       console.error('Booker email failed (non-fatal):', emailErr.message);
@@ -163,7 +188,8 @@ module.exports = async function handler(req, res) {
       appointmentId: created.id,
       joinUrl: created.joinWebUrl,
       meetingTitle,
-      manageUrl
+      rescheduleUrl,
+      cancelUrl
     });
 
   } catch (err) {
