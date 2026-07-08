@@ -752,7 +752,7 @@ async function submitBooking() {
   const end = new Date(start.getTime() + state.duration * 60000);
 
   const payload = {
-    buildName: state.account.buildName,
+    folderUrl: state.account.folderUrl,
     customerEmail,
     customerName,
     serviceId: getServiceId(state.duration),
