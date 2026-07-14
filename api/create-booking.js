@@ -97,7 +97,7 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const {
-    buildName, customerEmail, customerName, serviceId, staffId,
+    folderUrl, customerEmail, customerName, serviceId, staffId,
     startDateTime, endDateTime, sessionNotes, bookedBy, bookerEmail,
     sfId, duration, sessionType, trainerName, additionalEmails
   } = req.body;
@@ -106,14 +106,13 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  console.error('sfId received:', sfId);
   console.error('bookerEmail received:', bookerEmail);
-  console.error('additionalEmails received:', additionalEmails);
 
   const date = new Date(startDateTime);
   const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const titleBase = sessionType || 'COE Consult';
-  const meetingTitle = `${dateStr} ${titleBase}`;
-  const cleanBuildName = (buildName || '').replace(/\s*\(.*?\)\s*/g, '').trim();
+  const meetingTitle = `${dateStr} ${titleBase} — ${sfId}`;
 
   // Parse additional emails
   const extraEmails = additionalEmails
@@ -123,7 +122,6 @@ module.exports = async function handler(req, res) {
   try {
     const token = await getAccessToken();
 
-    // Build customers array — primary + additional
     const allCustomers = [
       {
         "@odata.type": "#microsoft.graph.bookingCustomerInformation",
@@ -133,7 +131,7 @@ module.exports = async function handler(req, res) {
           { "questionId": "03e23d5a-53a0-47c8-a7cb-fc8b0167b158", "question": "Booked By", "answer": bookedBy },
           { "questionId": "41052a65-937a-416f-b195-61db550e914b", "question": "Session Notes", "answer": sessionNotes || '' },
           { "questionId": "96ecbb6b-11e8-491c-a7bb-fe07bd256d2f", "question": "Customer Contact Email", "answer": customerEmail },
-          { "questionId": "b1e4da1c-e7dc-47da-84a4-3dcb9e2f646b", "question": "Build Name", "answer": cleanBuildName },
+          { "questionId": "b1e4da1c-e7dc-47da-84a4-3dcb9e2f646b", "question": "Build Name", "answer": sfId || '' },
           { "questionId": "30d42ee1-d12f-4402-a6bb-da55e719096c", "question": "Salesforce Account ID", "answer": sfId || '' }
         ]
       },
@@ -181,7 +179,7 @@ module.exports = async function handler(req, res) {
 
     const created = await bookingsRes.json();
 
-    // Fetch appointment back to get selfServiceAppointmentId
+    // Get selfServiceAppointmentId for reschedule/cancel links
     let selfServiceId = null;
     try {
       const fetchRes = await fetch(
@@ -208,7 +206,6 @@ module.exports = async function handler(req, res) {
       rescheduleUrl, cancelUrl
     });
 
-    // Send to booker + additional recipients
     const emailRecipients = [bookerEmail, ...extraEmails].filter(Boolean);
     console.error('Email recipients:', emailRecipients);
 
