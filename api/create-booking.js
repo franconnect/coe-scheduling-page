@@ -112,7 +112,7 @@ module.exports = async function handler(req, res) {
   const date = new Date(startDateTime);
   const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const titleBase = sessionType || 'COE Consult';
-  const meetingTitle = `${dateStr} ${titleBase} — ${sfId}`;
+  const meetingTitle = `${dateStr} ${titleBase} — ${sfId} — ${customerEmail}`;
 
   // Parse additional emails
   const extraEmails = additionalEmails
