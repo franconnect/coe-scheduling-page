@@ -52,10 +52,14 @@ export default async function handler(req, res) {
     const appointments = apptData.value || [];
     console.error(`Found ${appointments.length} appointments on ${date}`);
 
-    // Find appointment matching the Account ID in additionalInformation
+    // Find appointment matching the Account ID in custom question answers
+    const SF_ACCOUNT_ID_QUESTION = '30d42ee1-d12f-4402-a6bb-da55e719096c';
     const match = appointments.find(a => {
-      const info = a.additionalInformation || '';
-      return info.includes(`SF ID: ${id}`);
+      const customers = a.customers || [];
+      return customers.some(c => {
+        const answers = c.customQuestionAnswers || [];
+        return answers.some(ans => ans.questionId === SF_ACCOUNT_ID_QUESTION && ans.answer === id);
+      });
     });
 
     if (!match) {
